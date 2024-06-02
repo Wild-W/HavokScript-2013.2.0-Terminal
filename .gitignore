@@ -1,4 +1,5 @@
-HavokScript_FinalRelease.dll
-test_lua_state.exe
+*.dll
+*.exe
 .vscode/settings.json
 .vscode/tasks.json
+test.lua
