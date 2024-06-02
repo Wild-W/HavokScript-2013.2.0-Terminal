@@ -16,7 +16,7 @@ typedef void (__thiscall *LuaPopFunction)(lua_State*, int);
 int main(int argc, char* argv[]) {
     HMODULE hDll = LoadLibrary(TEXT("HavokScript_FinalRelease.dll"));
     if (hDll == NULL) {
-        std::cerr << "Failed to load HavokScript!" << '\n';
+        std::cerr << "Failed to load HavokScript!\n";
         return ERR_LIB;
     }
     auto luaL_newstate = (LuaStateFunction)GetProcAddress(hDll, "?luaL_newstate@@YAPEAUlua_State@@XZ");
