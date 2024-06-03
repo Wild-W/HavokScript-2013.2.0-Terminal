@@ -15,6 +15,8 @@ or with a file as argument.
 # ./hks script.lua
 ```
 
+Use `exit` to exit the process.
+
 **Optional**: Add hks to your user Path variable for ease of use.
 ## Also see
 [About HavokScript (sukritact.github.io)](https://sukritact.github.io/civilization-modding-wiki/civ-6/lua/articles/About-HavokScript/)
