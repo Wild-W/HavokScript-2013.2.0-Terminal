@@ -1,4 +1,6 @@
----@alias signatureData { qualifiers: string?, namespace: string, baseSignature: string, type: string }
+---Functions are full signatures\
+---Classes are arrays of functions
+---@alias exportDump { namespaces: exportDump[], functions: string[], classes: table<string, string[]> }
 
 ---@param command string
 ---@return string
@@ -14,28 +16,33 @@ function getCommandOutput(command)
 end
 
 ---@param dumpbinExports string
----@return signatureData[]
+---@return exportDump globalExportDump
 function getExportList(dumpbinExports)
-    local list = {}
+    ---@type exportDump
+    local globalExportDump = {
+        namespaces = {},
+        classes = {},
+        functions = {}
+    }
+    local signatureList = {}
 
     for name in dumpbinExports:gmatch("%s+%d+%s+%d+%s+%x+%s+([^\n]+)") do
-        print(name)
         local signature = unmangleSignature(name)
-        local secondSignaturePosition = signature:match("^public: class %S* &()")
+
+        ---@diagnostic disable-next-line: unbalanced-assignments
+        local className, secondSignaturePosition = signature:match("^public: class (%S*) & ()")
+            or signature:match("^public: static class (%S*) & ()")
+            or signature:match("^public: struct (%S*) & ()")
+            or signature:match("^public: static struct  (%S*) & ()")
+
         if secondSignaturePosition ~= nil then
-            insertSignatureData(list, signature:sub(1, secondSignaturePosition - 3))
+            globalExportDump.classes[className] = {}
             signature = signature:sub(secondSignaturePosition)
         end
-        insertSignatureData(list, signature)
+        table.insert(signatureList, signature)
     end
 
-    return list
-end
-
----@param list table
----@param signature string
-function insertSignatureData(list, signature)
-    table.insert(list, getSignatureData(signature))
+    return globalExportDump
 end
 
 ---@param mangledSignature string
@@ -59,36 +66,8 @@ local classPattern = "([%w_:]*):?:?([%w_:]+)"
 local namespacedPointerReferenceOverloadPattern = "^public: ([ %w_*]+ )([%w_:]+)::(operator .+)"
 
 ---@param signature string
----@return signatureData
+---@return string
 function getSignatureData(signature)
-    print(signature)
-    if signature:sub(1, 7) == "public:" then
-        if signature:sub(9, 13) == "class" or signature:sub(9, 14) == "struct" then
-            local namespace, class = signature:match(classPattern)
-            print(namespace, class)
-            return {
-                namespace = namespace,
-                baseSignature = class,
-                type = rightTrim(signature:sub(9, 14))
-            }
-        end
-        local qualifiers, namespace, method = signature:match(namespacedMethodPattern)
-        if method == nil then
-            qualifiers, namespace, method = signature:match(namespacedPointerReferenceOverloadPattern)
-        end
-        if method:sub(-7) == "__ptr64" then
-            method = method:sub(1, -9)
-        end
-        print(qualifiers, namespace, method)
-        return {
-            qualifiers = rightTrim(qualifiers),
-            namespace = namespace,
-            baseSignature = method,
-            type = "function"
-        }
-    end
-    print("not namespaced")
-    return {}
 end
 
 ---Strips whitespace from right of string
