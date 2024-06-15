@@ -1,3 +1,7 @@
+// Lessons learned:
+// Reverse engineering a header file does not necessarily work because you do not know enough about the alignment of bytes of custom types
+// LoadLibrary will have to do
+
 int __cdecl hksL_loadstring(struct lua_State * __ptr64,struct HksCompilerSettings const &,char const * __ptr64);
 void __cdecl hksL_register(struct lua_State * __ptr64,char const * __ptr64,struct luaL_Reg const * __ptr64,int);
 void __cdecl hksL_tostring(struct lua_State * __ptr64,int);
@@ -5,9 +9,11 @@ void __cdecl hksL_totable(struct lua_State * __ptr64);
 void __cdecl hks_combine(struct lua_State * __ptr64,int,char const * __ptr64);
 int __cdecl hks_debugbreakpoint(struct lua_State * __ptr64,char const * __ptr64);
 int __cdecl hks_debugprint(struct lua_State * __ptr64,int);
-int __cdecl hks_dump(struct lua_State * __ptr64,int (__cdecl*)(struct lua_State * __ptr64,void const * __ptr64,unsigned __int64,void * __ptr64),void * __ptr64,enum HksBytecodeStrippingLevel);
+// enum HksBytecodeStrippingLevel;
+// int __cdecl hks_dump(struct lua_State * __ptr64,int (__cdecl*)(struct lua_State * __ptr64,void const * __ptr64,unsigned __int64,void * __ptr64),void * __ptr64,enum HksBytecodeStrippingLevel);
 void __cdecl hks_dumpstats(struct lua_State * __ptr64);
-int __cdecl hks_error(struct lua_State * __ptr64,enum HksError);
+// enum HksError;
+// int __cdecl hks_error(struct lua_State * __ptr64,enum HksError);
 char const * __ptr64 __cdecl hks_getname(struct lua_State * __ptr64);
 void __cdecl hks_graphheap(struct lua_State * __ptr64,char const * __ptr64);
 int __cdecl hks_isstruct(struct lua_State * __ptr64,int);
@@ -27,8 +33,6 @@ int __cdecl hks_obj_rawequal(struct lua_State * __ptr64,struct HksObject const *
 void __cdecl hks_obj_rawget(struct lua_State * __ptr64,struct HksObject const * __ptr64,struct HksObject const * __ptr64,struct HksObject * __ptr64);
 struct HksObject __cdecl hks_obj_rawget_array(struct lua_State * __ptr64,struct HksObject const * __ptr64,int);
 void __cdecl hks_obj_rawgeti(struct lua_State * __ptr64,struct HksObject const * __ptr64,int,struct HksObject * __ptr64);
-void __cdecl hks_obj_rawgetslot_outofline(struct lua_State * __ptr64,class hks::StructInst const * __ptr64,class hks::InternString * __ptr64);
-void __cdecl hks_obj_rawsetslot_outofline(struct lua_State * __ptr64,class hks::StructInst * __ptr64,class hks::InternString * __ptr64);
 int __cdecl hks_obj_setfenv(struct lua_State * __ptr64,struct HksObject const * __ptr64,struct HksObject const * __ptr64);
 int __cdecl hks_obj_setmetatable(struct lua_State * __ptr64,struct HksObject const * __ptr64,struct HksObject const * __ptr64);
 void __cdecl hks_obj_settable(struct lua_State * __ptr64,struct HksObject const * __ptr64,struct HksObject const * __ptr64,struct HksObject const * __ptr64);
@@ -63,6 +67,8 @@ int __cdecl hksi_lua_isuserdata(struct lua_State * __ptr64,int);
 int __cdecl hksi_lua_lessthan(struct lua_State * __ptr64,int,int);
 int __cdecl hksi_lua_load(struct lua_State * __ptr64,char const * __ptr64 (__cdecl*)(struct lua_State * __ptr64,void * __ptr64,unsigned __int64 * __ptr64),void * __ptr64,char const * __ptr64);
 struct lua_State * __ptr64 __cdecl hksi_lua_newthread(struct lua_State * __ptr64);
+struct lua_State * __ptr64 __cdecl luaL_newstate(void);
+void __cdecl luaL_openlibs(struct lua_State * __ptr64);
 void * __ptr64 __cdecl hksi_lua_newuserdata(struct lua_State * __ptr64,unsigned __int64);
 int __cdecl hksi_lua_next(struct lua_State * __ptr64,int);
 unsigned __int64 __cdecl hksi_lua_objlen(struct lua_State * __ptr64,int);
@@ -133,9 +139,29 @@ int __cdecl lua_isnumber(struct lua_State * __ptr64,int);
 int __cdecl lua_isstring(struct lua_State * __ptr64,int);
 int __cdecl lua_isuserdata(struct lua_State * __ptr64,int);
 int __cdecl lua_lessthan(struct lua_State * __ptr64,int,int);
+void __cdecl lua_close(struct lua_State * __ptr64);
+char const * __ptr64 __cdecl lua_tolstring(struct lua_State * __ptr64,int,unsigned __int64 * __ptr64);
 int __cdecl lua_load(struct lua_State * __ptr64,char const * __ptr64 (__cdecl*)(struct lua_State * __ptr64,void * __ptr64,unsigned __int64 * __ptr64),void * __ptr64,char const * __ptr64);
 struct lua_State * __ptr64 __cdecl lua_newstate(void * __ptr64 (__cdecl*)(void * __ptr64,void * __ptr64,unsigned __int64,unsigned __int64),void * __ptr64);
+class HksCompilerSettings {
+    public:
+    __cdecl HksCompilerSettings(void);
+    // enum IntLiteralOptions;
+    // enum BytecodeSharingFormat;
+    struct HksCompilerSettings & __cdecl operator=(struct HksCompilerSettings &&);
+    struct HksCompilerSettings & __cdecl operator=(struct HksCompilerSettings const &);
+    int __cdecl _isHksGlobalMemoTestingMode(void)const;
+    void __cdecl _setHksGlobalMemoTestingMode(int);
+    // enum BytecodeSharingFormat __cdecl getBytecodeSharingFormat(void)const;
+    // enum IntLiteralOptions __cdecl getIntLiteralsEnabled(void)const;
+    char const * __ptr64 * __ptr64 __cdecl getStrip(void)const;
+    unsigned __int64 __cdecl getStripSize(void)const;
+    int __cdecl isEmitStruct(void)const;
+    int __cdecl isGlobalMemoization(void)const;
+};
 namespace hks {
+    class StructInst;
+    class InternString;
     class HeapAssertions {
         public:
         __cdecl HeapAssertions(struct lua_State * __ptr64);
@@ -156,13 +182,15 @@ namespace hks {
         public:
         hks::InternString * __ptr64 __cdecl internHashed(struct lua_State * __ptr64,char const * __ptr64,unsigned __int64,unsigned int);
     };
-    class StructInst;
-    class InternString;
 }
+void __cdecl hks_obj_rawgetslot_outofline(struct lua_State * __ptr64,class hks::StructInst const * __ptr64,class hks::InternString * __ptr64);
+void __cdecl hks_obj_rawsetslot_outofline(struct lua_State * __ptr64,class hks::StructInst * __ptr64,class hks::InternString * __ptr64);
 namespace LuaPlus {
     void __cdecl RegisterErrorCallback(void (__cdecl*)(struct lua_State * __ptr64,char const * __ptr64));
     void __cdecl ReportError(struct lua_State * __ptr64);
     void __cdecl ReportStackTrace(struct lua_State * __ptr64,char const * __ptr64);
+    class LuaStackObject;
+    class LuaState;
     class LuaObject {
         public:
         __cdecl LuaObject(class LuaPlus::LuaObject const &);
@@ -190,7 +218,6 @@ namespace LuaPlus {
         int __cdecl GetCount(void)const;
         float __cdecl GetFloat(void)const;
         int __cdecl GetInteger(void)const;
-        void * __ptr64 __cdecl GetLightUserData(void)const;
         void * __ptr64 __cdecl GetLightUserData(void)const;
         LuaObject __cdecl GetMetaTable(void)const;
         LuaObject __cdecl RawGetByIndex(int);
@@ -221,6 +248,7 @@ namespace LuaPlus {
     };
     class LuaStackObject {
         public:
+        __cdecl LuaStackObject(class LuaPlus::LuaState &,int);
         LuaStackObject & __cdecl operator=(class LuaPlus::LuaStackObject const &);
         LuaStackObject __cdecl operator[](int)const;
         LuaStackObject __cdecl operator[](char const * __ptr64)const;
@@ -244,6 +272,8 @@ namespace LuaPlus {
         void __cdecl SetObject(int,class LuaPlus::LuaStackObject &);
         void __cdecl SetObject(char const * __ptr64,class LuaPlus::LuaStackObject &);
         unsigned __int64 __cdecl StrLen(void)const;
+        void __cdecl Pop(void);
+        void __cdecl Pop(int);
     };
     class LuaStateOutFile {
         public:
@@ -254,10 +284,9 @@ namespace LuaPlus {
     };
     class LuaStackTableIterator {
         public:
-        LuaStackTableIterator & __cdecl operator++(void);
+        class LuaStackTableIterator & __cdecl operator++(void);
         LuaStackObject __cdecl GetKey(void);
         void __cdecl Reset(void);
-        class LuaPlus::LuaStackTableIterator & __cdecl LuaStackTableIterator::operator++(void);
     };
     class LuaStack {
         public:
@@ -266,6 +295,7 @@ namespace LuaPlus {
     };
     class LuaState {
         public:
+        int __cdecl DoString(char const * __ptr64);
         __cdecl LuaState(struct lua_State * __ptr64);
         void __cdecl CheckAny(int);
         int __cdecl CheckInt(int);
@@ -306,6 +336,7 @@ namespace LuaPlus {
         LuaStackObject __cdecl StackTop(void);
         void __cdecl Where(int);
         void __cdecl XMove(class LuaPlus::LuaState * __ptr64,int);
+        int __cdecl DoFile(char const * __ptr64);
     };
     class LuaTableIterator {
         public:
@@ -331,20 +362,4 @@ class HksStateSettings {
     public:
     HksFixedHeapSettings & __cdecl operator=(class HksStateSettings const &);
     HksCompilerSettings * __cdecl getDefaultCompilerSettings(void);
-};
-class HksCompilerSettings {
-    public:
-    __cdecl HksCompilerSettings(void);
-    enum IntLiteralOptions;
-    enum BytecodeSharingFormat;
-    struct HksCompilerSettings & __cdecl operator=(struct HksCompilerSettings &&);
-    struct HksCompilerSettings & __cdecl operator=(struct HksCompilerSettings const &);
-    int __cdecl _isHksGlobalMemoTestingMode(void)const;
-    void __cdecl _setHksGlobalMemoTestingMode(int);
-    enum HksCompilerSettings::BytecodeSharingFormat __cdecl getBytecodeSharingFormat(void)const;
-    enum HksCompilerSettings::IntLiteralOptions __cdecl getIntLiteralsEnabled(void)const;
-    char const * __ptr64 * __ptr64 __cdecl getStrip(void)const;
-    unsigned __int64 __cdecl getStripSize(void)const;
-    int __cdecl isEmitStruct(void)const;
-    int __cdecl isGlobalMemoization(void)const;
 };

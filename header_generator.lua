@@ -1,3 +1,7 @@
+-- Lessons learned:
+-- Reverse engineering a header file does not necessarily work because you do not know enough about the alignment of bytes of custom types
+-- LoadLibrary will have to do
+
 -- Functions are full signatures\
 -- Classes are arrays of functions
 ---@alias exportDump { namespaces: table<string, exportDump>, functions: string[], classes: table<string, string[]> }
@@ -178,7 +182,7 @@ end
 
 local output = io.open("HavokScript_FinalRelease.h", "w")
 if output == nil then
-    error("Error code 2: failed to get output file \"HavokScript_FinalRelease.h\"")
+    error("Error code 2: failed to get output file \"HavokScript_FinalRelease1.h\"")
     os.exit(2)
 end
 
