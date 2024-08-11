@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Havokscript",
+            "type": "lua-local",
+            "request": "launch",
+            "program": {
+                "command": "hks"
+            },
+            "args": [
+                "\"${workspaceFolder}\\tests\\debugger\\tables.lua\""
+            ],
+            "ignorePatterns": ["^/usr"],
+            "verbose": true
+        }
+    ]
+}
