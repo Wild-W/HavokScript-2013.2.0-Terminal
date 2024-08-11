@@ -12,6 +12,9 @@ typedef void (__cdecl *LuaVoidFunction)(lua_State*);
 typedef int (__thiscall *LuaDoStringFunction)(lua_State*, char*);
 typedef char* (__cdecl *LuaGetStringFunction)(lua_State*, int, uint64_t*);
 typedef void (__thiscall *LuaPopFunction)(lua_State*, int);
+typedef void(__cdecl* hks_pushnamedcclosureType)(lua_State* __ptr64, int(__cdecl*)(lua_State* __ptr64), int, const char* __ptr64, int);
+typedef void(__cdecl* hksi_lua_setfieldType)(lua_State* __ptr64, int, char*);
+typedef void(__cdecl* hksi_lua_getfieldType)(lua_State*, int, const char*);
 
 int main(int argc, char* argv[]) {
     HMODULE hDll = LoadLibrary(TEXT("HavokScript_FinalRelease.dll"));
@@ -26,6 +29,9 @@ int main(int argc, char* argv[]) {
     auto lua_tolstring = (LuaGetStringFunction)GetProcAddress(hDll, "?lua_tolstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
     auto Pop = (LuaPopFunction)GetProcAddress(hDll, "?Pop@LuaState@LuaPlus@@QEAAXH@Z");
     auto DoFile = (LuaDoStringFunction)GetProcAddress(hDll, "?DoFile@LuaState@LuaPlus@@QEAAHPEBD@Z");
+    auto hks_pushnamedcclosure = (hks_pushnamedcclosureType)GetProcAddress(hDll, "?hks_pushnamedcclosure@@YAXPEAUlua_State@@P6AH0@ZHPEBDH@Z");
+    auto hksi_lua_setfield = (hksi_lua_setfieldType)GetProcAddress(hDll, "?hksi_lua_setfield@@YAXPEAUlua_State@@HPEBD@Z");
+	auto hks_lua_getfield = (hksi_lua_getfieldType)GetProcAddress(hDll, "?hksi_lua_getfield@@YAXPEAUlua_State@@HPEBD@Z");
 
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
