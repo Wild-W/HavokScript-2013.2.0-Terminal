@@ -9,9 +9,22 @@ typedef unsigned long long uint64_t;
 #define ERR_FUNC 2
 #define LUA_OK 0
 
+#define LUA_TNONE (-1)
+#define LUA_TNIL 0
+#define LUA_TBOOLEAN 1
+#define LUA_TLIGHTUSERDATA 2
+#define LUA_TNUMBER 3
+#define LUA_TSTRING 4
+#define LUA_TTABLE 5
+#define LUA_TFUNCTION 6
+#define LUA_TUSERDATA 7
+#define LUA_TTHREAD 8
+
 #define PushLuaMethod(L, func, cclosurename, stackOffset, name) \
     hks::pushnamedcclosure(L, func, 0, cclosurename, 0);        \
     hks::setfield(L, stackOffset, name);
+
+#define isnoneornil(L, n) (type(L, (n)) <= 0)
 
 namespace hks
 {
@@ -28,97 +41,136 @@ namespace hks
     constexpr int LUA_MASKCOUNT = 0x8;
 
     typedef struct lua_State lua_State;
+    typedef struct lua_Debug lua_Debug;
 
-    typedef int(__cdecl *luaFunc)(lua_State *);
+    // 5.1 Debug Reference:
+    //
+    // struct lua_Debug
+    // {
+    //     int event;
+    //     const char *name;           /* (n) */
+    //     const char *namewhat;       /* (n) `global', `local', `field', `method' */
+    //     const char *what;           /* (S) `Lua', `C', `main', `tail' */
+    //     const char *source;         /* (S) */
+    //     int currentline;            /* (l) */
+    //     int nups;                   /* (u) number of upvalues */
+    //     int linedefined;            /* (S) */
+    //     int lastlinedefined;        /* (S) */
+    //     char short_src[LUA_IDSIZE]; /* (S) */
+    //     /* private part */
+    //     int i_ci; /* active function */
+    // };
 
-    typedef void(__cdecl *hks_pushnamedcclosureType)(lua_State *, luaFunc, int, const char *, int);
+    typedef int (*luaFunc)(lua_State *);
+
+    typedef void (*hks_pushnamedcclosureType)(lua_State *, luaFunc, int, const char *, int);
     hks_pushnamedcclosureType pushnamedcclosure;
-    typedef int(__cdecl *luaL_checkintegerType)(lua_State *, int);
+    typedef int (*luaL_checkintegerType)(lua_State *, int);
     luaL_checkintegerType checkinteger;
-    typedef double(__cdecl *luaL_checknumberType)(lua_State *, int);
+    typedef double (*luaL_checknumberType)(lua_State *, int);
     luaL_checknumberType checknumber;
-    typedef void(__cdecl *hksi_lua_setfieldType)(lua_State *, int, const char *);
+    typedef void (*hksi_lua_setfieldType)(lua_State *, int, const char *);
     hksi_lua_setfieldType setfield;
-    typedef int(__thiscall *GetTopType)(lua_State *);
+    typedef int (*GetTopType)(lua_State *);
     GetTopType gettop;
-    typedef int(__thiscall *DoStringType)(lua_State *, const char *);
+    typedef int (*DoStringType)(lua_State *, const char *);
     DoStringType dostring;
-    typedef int(__cdecl *hksi_lua_tobooleanType)(lua_State *, int);
+    typedef int (*hksi_lua_tobooleanType)(lua_State *, int);
     hksi_lua_tobooleanType toboolean;
-    typedef void(__cdecl *hksi_lua_pushnumberType)(lua_State *, double);
+    typedef void (*hksi_lua_pushnumberType)(lua_State *, double);
     hksi_lua_pushnumberType pushnumber;
-    typedef void(__cdecl *hksi_lua_pushintegerType)(lua_State *, int);
+    typedef void (*hksi_lua_pushintegerType)(lua_State *, int);
     hksi_lua_pushintegerType pushinteger;
-    typedef void(__cdecl *hksi_luaL_errorType)(lua_State *, char const *, ...);
+    typedef void (*hksi_luaL_errorType)(lua_State *, char const *, ...);
     hksi_luaL_errorType error;
-    typedef char const *(__cdecl *hksi_lua_pushfstringType)(lua_State *, char const *, ...);
+    typedef char const *(*hksi_lua_pushfstringType)(lua_State *, char const *, ...);
     hksi_lua_pushfstringType pushfstring;
-    typedef char const *(__cdecl *CheckLStringType)(lua_State *, int, unsigned __int64 *);
+    typedef char const *(*CheckLStringType)(lua_State *, int, unsigned __int64 *);
     CheckLStringType checklstring;
-    typedef void *(__cdecl *hksi_lua_touserdataType)(lua_State *, int);
+    typedef void *(*hksi_lua_touserdataType)(lua_State *, int);
     hksi_lua_touserdataType touserdata;
-    typedef void(__cdecl *hksi_lua_getfieldType)(lua_State *, int, char const *);
+    typedef void (*hksi_lua_getfieldType)(lua_State *, int, char const *);
     hksi_lua_getfieldType getfield;
-    typedef void(__thiscall *PopType)(lua_State *, int);
+    typedef void (*PopType)(lua_State *, int);
     PopType pop;
-    typedef void(__cdecl *hksi_lua_createtableType)(lua_State *, int, int);
+    typedef void (*hksi_lua_createtableType)(lua_State *, int, int);
     hksi_lua_createtableType createtable;
-    typedef luaFunc(__cdecl *lua_tocfunctionType)(lua_State *, int);
+    typedef luaFunc (*lua_tocfunctionType)(lua_State *, int);
     lua_tocfunctionType tocfunction;
-    typedef void(__cdecl *hksL_checktableType)(lua_State *, int);
+    typedef void (*hksL_checktableType)(lua_State *, int);
     hksL_checktableType checktable;
-    typedef unsigned long long(__cdecl *hks_lua_objlenType)(lua_State *, int);
+    typedef unsigned long long (*hks_lua_objlenType)(lua_State *, int);
     hks_lua_objlenType objlen;
-    typedef void(__cdecl *hks_lua_gettableType)(lua_State *, int);
+    typedef void (*hks_lua_gettableType)(lua_State *, int);
     hks_lua_gettableType gettable;
-    typedef void(__cdecl *hksi_lua_cpcallType)(lua_State *, int, luaFunc, int);
+    typedef void (*hksi_lua_cpcallType)(lua_State *, int, luaFunc, int);
     hksi_lua_cpcallType cpcall;
-    typedef int(__cdecl *RefType)(lua_State *, int);
+    typedef int (*RefType)(lua_State *, int);
     RefType ref;
-    typedef int(__cdecl *hksi_lua_pcallType)(lua_State *, int, int, int);
+    typedef int (*hksi_lua_pcallType)(lua_State *, int, int, int);
     hksi_lua_pcallType pcall;
-    typedef void(__cdecl *hski_lua_pushvalueType)(lua_State *, int);
+    typedef void (*hski_lua_pushvalueType)(lua_State *, int);
     hski_lua_pushvalueType pushvalue;
-    typedef void(__cdecl *hksi_lua_rawgetiType)(lua_State *, int, int);
+    typedef void (*hksi_lua_rawgetiType)(lua_State *, int, int);
     hksi_lua_rawgetiType rawgeti;
-    typedef void(__cdecl *hksi_lua_unrefType)(hks::lua_State *, int, int);
+    typedef void (*hksi_lua_unrefType)(hks::lua_State *, int, int);
     hksi_lua_unrefType unref;
-    typedef void(__cdecl *hksi_lua_settableType)(hks::lua_State *, int);
+    typedef void (*hksi_lua_settableType)(hks::lua_State *, int);
     hksi_lua_settableType settable;
-    typedef int(__cdecl *hksi_lua_isnumberType)(hks::lua_State *, int);
+    typedef int (*hksi_lua_isnumberType)(hks::lua_State *, int);
     hksi_lua_isnumberType isnumber;
-    typedef double(__cdecl *hksi_lua_tonumberType)(hks::lua_State *, int);
+    typedef double (*hksi_lua_tonumberType)(hks::lua_State *, int);
     hksi_lua_tonumberType tonumber;
-    typedef int(__cdecl *hksi_lua_isuserdataType)(hks::lua_State *, int);
+    typedef int (*hksi_lua_isuserdataType)(hks::lua_State *, int);
     hksi_lua_isuserdataType isuserdata;
-    typedef int(__cdecl *luaopen_debugType)(hks::lua_State *);
+    typedef int (*luaopen_debugType)(hks::lua_State *);
     luaopen_debugType luaopen_debug;
-    typedef int(__cdecl *hksi_lua_tointegerType)(hks::lua_State *, int);
+    typedef int (*hksi_lua_tointegerType)(hks::lua_State *, int);
     hksi_lua_tointegerType tointeger;
-    typedef int(__cdecl *hksi_lua_typeType)(lua_State *, int);
+    typedef int (*hksi_lua_typeType)(lua_State *, int);
     hksi_lua_typeType type;
-    typedef int(__cdecl *luaL_optintegerType)(lua_State *, int, int);
+    typedef int (*luaL_optintegerType)(lua_State *, int, int);
     luaL_optintegerType optinteger;
-    typedef int(__cdecl *hksi_lua_sethookType)(lua_State *, void *, int, int);
+    typedef int (*hksi_lua_sethookType)(lua_State *, void *, int, int);
     hksi_lua_sethookType sethook;
-    typedef void *(__cdecl *hksi_lua_gethookType)(lua_State *);
+    typedef void *(*hksi_lua_gethookType)(lua_State *);
     hksi_lua_gethookType gethook;
-    typedef int(__cdecl *hksi_lua_gethookmaskType)(lua_State *);
+    typedef int (*hksi_lua_gethookmaskType)(lua_State *);
     hksi_lua_gethookmaskType gethookmask;
-    typedef int(__cdecl *hksi_lua_gethookcountType)(lua_State *);
+    typedef int (*hksi_lua_gethookcountType)(lua_State *);
     hksi_lua_gethookcountType gethookcount;
-    typedef lua_State *(__cdecl *luaL_newstateType)();
+    typedef lua_State *(*luaL_newstateType)();
     luaL_newstateType newstate;
-    typedef void(__cdecl *luaL_openlibsType)(lua_State *);
+    typedef void (*luaL_openlibsType)(lua_State *);
     luaL_openlibsType openlibs;
-    typedef char *(__cdecl *lua_tolstringType)(lua_State *, int, size_t *);
+    typedef char *(*lua_tolstringType)(lua_State *, int, size_t *);
     lua_tolstringType tolstring;
-    typedef lua_State *(__cdecl *luaL_closeType)(lua_State *);
+    typedef lua_State *(*luaL_closeType)(lua_State *);
     luaL_closeType close;
-    typedef int(__thiscall *DoFileType)(lua_State *, char *);
+    typedef int (*DoFileType)(lua_State *, char *);
     DoFileType dofile;
-    typedef int(__cdecl *lua_isstringType)(lua_State *, int);
+    typedef int (*lua_isstringType)(lua_State *, int);
     lua_isstringType isstring;
+    typedef lua_State *(*hksi_lua_tothreadType)(lua_State *, int);
+    hksi_lua_tothreadType tothread;
+    typedef void (*lua_settopType)(lua_State *, int);
+    lua_settopType settop;
+    typedef void (*hksi_luaL_checktypeType)(lua_State *, int, int);
+    hksi_luaL_checktypeType checktype;
+    typedef void (*hksi_lua_rawgetType)(lua_State *, int);
+    hksi_lua_rawgetType rawget;
+    typedef void (*lua_pushnilType)(lua_State *);
+    lua_pushnilType pushnil;
+    typedef int (*hks_lua_getinfoType)(lua_State *, char *, void *);
+    hks_lua_getinfoType getinfo;
+    typedef void (*lua_callType)(lua_State *, int, int);
+    lua_callType call;
+    typedef void (*XMoveType)(lua_State *, lua_State *, int);
+    XMoveType xmove;
+    typedef void (*lua_rawsetType)(lua_State *, int);
+    lua_rawsetType rawset;
+    typedef void (*lua_removeType)(lua_State *, int);
+    lua_removeType remove;
 
     static void init_imports()
     {
@@ -166,6 +218,16 @@ namespace hks
         tolstring = (lua_tolstringType)GetProcAddress(hksDll, "?lua_tolstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
         dofile = (DoFileType)GetProcAddress(hksDll, "?DoFile@LuaState@LuaPlus@@QEAAHPEBD@Z");
         isstring = (lua_isstringType)GetProcAddress(hksDll, "?lua_isstring@@YAHPEAUlua_State@@H@Z");
+        tothread = (hksi_lua_tothreadType)GetProcAddress(hksDll, "?hksi_lua_tothread@@YAPEAUlua_State@@PEAU1@H@Z");
+        settop = (lua_settopType)GetProcAddress(hksDll, "?lua_settop@@YAXPEAUlua_State@@H@Z");
+        checktype = (hksi_luaL_checktypeType)GetProcAddress(hksDll, "?hksi_luaL_checktype@@YAXPEAUlua_State@@HH@Z");
+        rawget = (hksi_lua_rawgetType)GetProcAddress(hksDll, "?hksi_lua_rawget@@YAXPEAUlua_State@@H@Z");
+        pushnil = (lua_pushnilType)GetProcAddress(hksDll, "?lua_pushnil@@YAXPEAUlua_State@@@Z");
+        getinfo = (hks_lua_getinfoType)GetProcAddress(hksDll, "?hksi_lua_getinfo@@YAHPEAUlua_State@@PEBDPEAUlua_Debug@@@Z");
+        call = (lua_callType)GetProcAddress(hksDll, "?lua_call@@YAXPEAUlua_State@@HH@Z");
+        xmove = (XMoveType)GetProcAddress(hksDll, "?XMove@LuaState@LuaPlus@@QEAAXPEAV12@H@Z");
+        rawset = (lua_rawsetType)GetProcAddress(hksDll, "?lua_rawset@@YAXPEAUlua_State@@H@Z");
+        remove = (lua_removeType)GetProcAddress(hksDll, "?lua_remove@@YAXPEAUlua_State@@H@Z");
     }
 
     int isnil(lua_State *L, int index)
@@ -237,58 +299,6 @@ namespace hks
         return mask;
     }
 
-    int l_sethook(lua_State *L)
-    {
-        int nargs = gettop(L);
-
-        // No arguments: remove the hook
-        if (nargs == 0)
-        {
-            sethook(L, NULL, 0, 0);
-            return 0;
-        }
-
-        void *hook = NULL;
-        int mask = 0;
-        int count = 0;
-
-        if (nargs >= 1 && !isnil(L, 1))
-        {
-            hook = (void *)tocfunction(L, 1);
-        }
-
-        if (nargs >= 2 && isstring(L, 2))
-        {
-            size_t length;
-            const char *mask_str = tolstring(L, 2, &length);
-            mask = get_debug_mask(L, mask_str);
-        }
-
-        if (nargs >= 3)
-        {
-            count = optinteger(L, 3, 0);
-        }
-
-        sethook(L, hook, mask, count);
-        return 0;
-    }
-
-    static int hook_id = 0;
-    int l_gethook(lua_State *L)
-    {
-        void *hook = gethook(L);
-        if (hook == NULL)
-            return 0;
-
-        char hook_name[20] = "hook_";
-        snprintf(hook_name + strlen(hook_name), sizeof(hook_name), "%d", hook_id++);
-
-        pushnamedcclosure(L, (luaFunc)hook, 0, hook_name, 0);
-        pushinteger(L, gethookmask(L));
-        pushinteger(L, gethookcount(L));
-        return 3;
-    }
-
     void pushboolean(lua_State *L, bool value)
     {
         // Access the Lua stack top pointer
@@ -311,6 +321,133 @@ namespace hks
         *luaStack = 2;
 
         *(int **)((uintptr_t)L + 0x48) = luaStack + 0x4;
+    }
+
+    static lua_State *getthread(lua_State *L, int *arg)
+    {
+        if (type(L, 1) == LUA_TTHREAD)
+        {
+            *arg = 1;
+            return tothread(L, 1);
+        }
+        else
+        {
+            *arg = 0;
+            return L;
+        }
+    }
+
+    static int makemask(const char *smask, int count)
+    {
+        int mask = 0;
+        if (strchr(smask, 'c'))
+            mask |= LUA_MASKCALL;
+        if (strchr(smask, 'r'))
+            mask |= LUA_MASKRET;
+        if (strchr(smask, 'l'))
+            mask |= LUA_MASKLINE;
+        if (count > 0)
+            mask |= LUA_MASKCOUNT;
+        return mask;
+    }
+
+    static char *unmakemask(int mask, char *smask)
+    {
+        int i = 0;
+        if (mask & LUA_MASKCALL)
+            smask[i++] = 'c';
+        if (mask & LUA_MASKRET)
+            smask[i++] = 'r';
+        if (mask & LUA_MASKLINE)
+            smask[i++] = 'l';
+        smask[i] = '\0';
+        return smask;
+    }
+
+    static const char KEY_HOOK = 'h';
+
+    static void hookf(lua_State *L, void *ar)
+    {
+        static const char *const hooknames[] =
+            {"call", "return", "line", "count", "tail return"};
+        pushlightuserdata(L, (void *)&KEY_HOOK);
+        rawget(L, LUA_REGISTRYINDEX);
+        pushlightuserdata(L, L);
+        rawget(L, -2);
+        if (type(L, -1) == LUA_TFUNCTION)
+        {
+            pushfstring(L, hooknames[*(int *)ar]);   // ar->0x0 - event
+            if (*(int *)((uintptr_t)ar + 0x40) >= 0) // ar->0x64 - currentline
+                pushinteger(L, *(int *)((uintptr_t)ar + 0x40));
+            else
+                pushnil(L);
+            getinfo(L, "lS", ar);
+            call(L, 2, 0);
+        }
+    }
+
+    static void gethooktable(lua_State *L)
+    {
+        pushlightuserdata(L, (void *)&KEY_HOOK);
+        rawget(L, LUA_REGISTRYINDEX);
+        if (type(L, -1) != LUA_TTABLE)
+        {
+            pop(L, 1);
+            createtable(L, 0, 1);
+            pushlightuserdata(L, (void *)&KEY_HOOK);
+            pushvalue(L, -2);
+            rawset(L, LUA_REGISTRYINDEX);
+        }
+    }
+
+    int l_sethook(lua_State *L)
+    {
+        int arg;
+        lua_State *L1 = getthread(L, &arg);
+        if (isnoneornil(L, arg + 1))
+        {
+            settop(L, arg + 1);
+            sethook(L1, NULL, 0, 0);
+        }
+        else
+        {
+            const char *smask = checklstring(L, arg + 2, NULL);
+            int count = optinteger(L, arg + 3, 0);
+            checktype(L, arg + 1, LUA_TFUNCTION);
+            sethook(L1, (void *)hookf, makemask(smask, count), count);
+        }
+        gethooktable(L1);
+        pushlightuserdata(L1, L1);
+        pushvalue(L, arg + 1);
+        xmove(L, L1, 1);
+        rawset(L1, -3);
+        pop(L1, 1);
+        return 0;
+    }
+
+    static int hook_id = 0;
+    int l_gethook(lua_State *L)
+    {
+        int arg;
+        lua_State *L1 = getthread(L, &arg);
+        char buff[5];
+        int mask = gethookmask(L1);
+        void *hook = gethook(L1);
+        if (hook != NULL && hook != hookf)
+        {
+            pushfstring(L, "external hook");
+        }
+        else
+        {
+            gethooktable(L1);
+            pushlightuserdata(L1, L1);
+            rawget(L1, -2);
+            remove(L, 1);
+            xmove(L1, L, 1);
+        }
+        pushfstring(L, unmakemask(mask, buff));
+        pushinteger(L, gethookcount(L1));
+        return 3;
     }
 
     // Should only ever be called once.

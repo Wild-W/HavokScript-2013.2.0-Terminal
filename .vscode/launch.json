@@ -11,7 +11,9 @@
             "args": [
                 "\"${workspaceFolder}\\tests\\debugger\\tables.lua\""
             ],
-            "ignorePatterns": ["^/usr"],
+            "ignorePatterns": [
+                "^/usr"
+            ],
             "verbose": true
         }
     ]
