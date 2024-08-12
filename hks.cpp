@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <sstream>
 
 typedef unsigned long long uint64_t;
 
@@ -19,6 +20,8 @@ typedef unsigned long long uint64_t;
 #define LUA_TFUNCTION 6
 #define LUA_TUSERDATA 7
 #define LUA_TTHREAD 8
+
+#define LUA_MULTRET (-1)
 
 #define PushLuaMethod(L, func, cclosurename, stackOffset, name) \
     hks::pushnamedcclosure(L, func, 0, cclosurename, 0);        \
@@ -61,173 +64,198 @@ namespace hks
     //     int i_ci; /* active function */
     // };
 
+    namespace StateSettings
+    {
+        typedef struct HksCompilerSettings HksCompilerSettings;
+
+        typedef HksCompilerSettings *(*_getDefaultCompilerSettings)(void);
+        _getDefaultCompilerSettings getDefaultCompilerSettings;
+    }
+
     typedef int (*luaFunc)(lua_State *);
 
-    typedef void (*hks_pushnamedcclosureType)(lua_State *, luaFunc, int, const char *, int);
-    hks_pushnamedcclosureType pushnamedcclosure;
-    typedef int (*luaL_checkintegerType)(lua_State *, int);
-    luaL_checkintegerType checkinteger;
-    typedef double (*luaL_checknumberType)(lua_State *, int);
-    luaL_checknumberType checknumber;
-    typedef void (*hksi_lua_setfieldType)(lua_State *, int, const char *);
-    hksi_lua_setfieldType setfield;
-    typedef int (*GetTopType)(lua_State *);
-    GetTopType gettop;
-    typedef int (*DoStringType)(lua_State *, const char *);
-    DoStringType dostring;
-    typedef int (*hksi_lua_tobooleanType)(lua_State *, int);
-    hksi_lua_tobooleanType toboolean;
-    typedef void (*hksi_lua_pushnumberType)(lua_State *, double);
-    hksi_lua_pushnumberType pushnumber;
-    typedef void (*hksi_lua_pushintegerType)(lua_State *, int);
-    hksi_lua_pushintegerType pushinteger;
-    typedef void (*hksi_luaL_errorType)(lua_State *, char const *, ...);
-    hksi_luaL_errorType error;
-    typedef char const *(*hksi_lua_pushfstringType)(lua_State *, char const *, ...);
-    hksi_lua_pushfstringType pushfstring;
-    typedef char const *(*CheckLStringType)(lua_State *, int, unsigned __int64 *);
-    CheckLStringType checklstring;
-    typedef void *(*hksi_lua_touserdataType)(lua_State *, int);
-    hksi_lua_touserdataType touserdata;
-    typedef void (*hksi_lua_getfieldType)(lua_State *, int, char const *);
-    hksi_lua_getfieldType getfield;
-    typedef void (*PopType)(lua_State *, int);
-    PopType pop;
-    typedef void (*hksi_lua_createtableType)(lua_State *, int, int);
-    hksi_lua_createtableType createtable;
-    typedef luaFunc (*lua_tocfunctionType)(lua_State *, int);
-    lua_tocfunctionType tocfunction;
-    typedef void (*hksL_checktableType)(lua_State *, int);
-    hksL_checktableType checktable;
-    typedef unsigned long long (*hks_lua_objlenType)(lua_State *, int);
-    hks_lua_objlenType objlen;
-    typedef void (*hks_lua_gettableType)(lua_State *, int);
-    hks_lua_gettableType gettable;
-    typedef void (*hksi_lua_cpcallType)(lua_State *, int, luaFunc, int);
-    hksi_lua_cpcallType cpcall;
-    typedef int (*RefType)(lua_State *, int);
-    RefType ref;
-    typedef int (*hksi_lua_pcallType)(lua_State *, int, int, int);
-    hksi_lua_pcallType pcall;
-    typedef void (*hski_lua_pushvalueType)(lua_State *, int);
-    hski_lua_pushvalueType pushvalue;
-    typedef void (*hksi_lua_rawgetiType)(lua_State *, int, int);
-    hksi_lua_rawgetiType rawgeti;
-    typedef void (*hksi_lua_unrefType)(hks::lua_State *, int, int);
-    hksi_lua_unrefType unref;
-    typedef void (*hksi_lua_settableType)(hks::lua_State *, int);
-    hksi_lua_settableType settable;
-    typedef int (*hksi_lua_isnumberType)(hks::lua_State *, int);
-    hksi_lua_isnumberType isnumber;
-    typedef double (*hksi_lua_tonumberType)(hks::lua_State *, int);
-    hksi_lua_tonumberType tonumber;
-    typedef int (*hksi_lua_isuserdataType)(hks::lua_State *, int);
-    hksi_lua_isuserdataType isuserdata;
-    typedef int (*luaopen_debugType)(hks::lua_State *);
-    luaopen_debugType luaopen_debug;
-    typedef int (*hksi_lua_tointegerType)(hks::lua_State *, int);
-    hksi_lua_tointegerType tointeger;
-    typedef int (*hksi_lua_typeType)(lua_State *, int);
-    hksi_lua_typeType type;
-    typedef int (*luaL_optintegerType)(lua_State *, int, int);
-    luaL_optintegerType optinteger;
-    typedef int (*hksi_lua_sethookType)(lua_State *, void *, int, int);
-    hksi_lua_sethookType sethook;
-    typedef void *(*hksi_lua_gethookType)(lua_State *);
-    hksi_lua_gethookType gethook;
-    typedef int (*hksi_lua_gethookmaskType)(lua_State *);
-    hksi_lua_gethookmaskType gethookmask;
-    typedef int (*hksi_lua_gethookcountType)(lua_State *);
-    hksi_lua_gethookcountType gethookcount;
-    typedef lua_State *(*luaL_newstateType)();
-    luaL_newstateType newstate;
-    typedef void (*luaL_openlibsType)(lua_State *);
-    luaL_openlibsType openlibs;
-    typedef char *(*lua_tolstringType)(lua_State *, int, size_t *);
-    lua_tolstringType tolstring;
-    typedef lua_State *(*luaL_closeType)(lua_State *);
-    luaL_closeType close;
-    typedef int (*DoFileType)(lua_State *, char *);
-    DoFileType dofile;
-    typedef int (*lua_isstringType)(lua_State *, int);
-    lua_isstringType isstring;
-    typedef lua_State *(*hksi_lua_tothreadType)(lua_State *, int);
-    hksi_lua_tothreadType tothread;
-    typedef void (*lua_settopType)(lua_State *, int);
-    lua_settopType settop;
-    typedef void (*hksi_luaL_checktypeType)(lua_State *, int, int);
-    hksi_luaL_checktypeType checktype;
-    typedef void (*hksi_lua_rawgetType)(lua_State *, int);
-    hksi_lua_rawgetType rawget;
-    typedef void (*lua_pushnilType)(lua_State *);
-    lua_pushnilType pushnil;
-    typedef int (*hks_lua_getinfoType)(lua_State *, char *, void *);
-    hks_lua_getinfoType getinfo;
-    typedef void (*lua_callType)(lua_State *, int, int);
-    lua_callType call;
-    typedef void (*XMoveType)(lua_State *, lua_State *, int);
-    XMoveType xmove;
-    typedef void (*lua_rawsetType)(lua_State *, int);
-    lua_rawsetType rawset;
-    typedef void (*lua_removeType)(lua_State *, int);
-    lua_removeType remove;
+    typedef void (*hks_pushnamedcclosure)(lua_State *, luaFunc, int, const char *, int);
+    hks_pushnamedcclosure pushnamedcclosure;
+    typedef int (*luaL_checkinteger)(lua_State *, int);
+    luaL_checkinteger checkinteger;
+    typedef double (*luaL_checknumber)(lua_State *, int);
+    luaL_checknumber checknumber;
+    typedef void (*hksi_lua_setfield)(lua_State *, int, const char *);
+    hksi_lua_setfield setfield;
+    typedef int (*GetTop)(lua_State *);
+    GetTop gettop;
+    typedef int (*DoString)(lua_State *, const char *);
+    DoString dostring;
+    typedef int (*hksi_lua_toboolean)(lua_State *, int);
+    hksi_lua_toboolean toboolean;
+    typedef void (*hksi_lua_pushnumber)(lua_State *, double);
+    hksi_lua_pushnumber pushnumber;
+    typedef void (*hksi_lua_pushinteger)(lua_State *, int);
+    hksi_lua_pushinteger pushinteger;
+    typedef void (*hksi_luaL_error)(lua_State *, char const *, ...);
+    hksi_luaL_error error;
+    typedef char const *(*hksi_lua_pushfstring)(lua_State *, char const *, ...);
+    hksi_lua_pushfstring pushfstring;
+    typedef char const *(*CheckLString)(lua_State *, int, unsigned __int64 *);
+    CheckLString checklstring;
+    typedef void *(*hksi_lua_touserdata)(lua_State *, int);
+    hksi_lua_touserdata touserdata;
+    typedef void (*hksi_lua_getfield)(lua_State *, int, char const *);
+    hksi_lua_getfield getfield;
+    typedef void (*Pop)(lua_State *, int);
+    Pop pop;
+    typedef void (*hksi_lua_createtable)(lua_State *, int, int);
+    hksi_lua_createtable createtable;
+    typedef luaFunc (*lua_tocfunction)(lua_State *, int);
+    lua_tocfunction tocfunction;
+    typedef void (*hksL_checktable)(lua_State *, int);
+    hksL_checktable checktable;
+    typedef unsigned long long (*hks_lua_objlen)(lua_State *, int);
+    hks_lua_objlen objlen;
+    typedef void (*hks_lua_gettable)(lua_State *, int);
+    hks_lua_gettable gettable;
+    typedef void (*hksi_lua_cpcall)(lua_State *, int, luaFunc, int);
+    hksi_lua_cpcall cpcall;
+    typedef int (*Ref)(lua_State *, int);
+    Ref ref;
+    typedef int (*hksi_lua_pcall)(lua_State *, int, int, int);
+    hksi_lua_pcall pcall;
+    typedef void (*hski_lua_pushvalue)(lua_State *, int);
+    hski_lua_pushvalue pushvalue;
+    typedef void (*hksi_lua_rawgeti)(lua_State *, int, int);
+    hksi_lua_rawgeti rawgeti;
+    typedef void (*hksi_lua_unref)(hks::lua_State *, int, int);
+    hksi_lua_unref unref;
+    typedef void (*hksi_lua_settable)(hks::lua_State *, int);
+    hksi_lua_settable settable;
+    typedef int (*hksi_lua_isnumber)(hks::lua_State *, int);
+    hksi_lua_isnumber isnumber;
+    typedef double (*hksi_lua_tonumber)(hks::lua_State *, int);
+    hksi_lua_tonumber tonumber;
+    typedef int (*hksi_lua_isuserdata)(hks::lua_State *, int);
+    hksi_lua_isuserdata isuserdata;
+    typedef int (*luaopen_debug)(hks::lua_State *);
+    luaopen_debug open_debug;
+    typedef int (*hksi_lua_tointeger)(hks::lua_State *, int);
+    hksi_lua_tointeger tointeger;
+    typedef int (*hksi_lua_type)(lua_State *, int);
+    hksi_lua_type type;
+    typedef int (*luaL_optinteger)(lua_State *, int, int);
+    luaL_optinteger optinteger;
+    typedef int (*hksi_lua_sethook)(lua_State *, void *, int, int);
+    hksi_lua_sethook sethook;
+    typedef void *(*hksi_lua_gethook)(lua_State *);
+    hksi_lua_gethook gethook;
+    typedef int (*hksi_lua_gethookmask)(lua_State *);
+    hksi_lua_gethookmask gethookmask;
+    typedef int (*hksi_lua_gethookcount)(lua_State *);
+    hksi_lua_gethookcount gethookcount;
+    typedef lua_State *(*luaL_newstate)();
+    luaL_newstate newstate;
+    typedef void (*luaL_openlibs)(lua_State *);
+    luaL_openlibs openlibs;
+    typedef char *(*lua_tolstring)(lua_State *, int, size_t *);
+    lua_tolstring tolstring;
+    typedef lua_State *(*luaL_close)(lua_State *);
+    luaL_close close;
+    typedef int (*DoFile)(lua_State *, char *);
+    DoFile dofile;
+    typedef int (*lua_isstring)(lua_State *, int);
+    lua_isstring isstring;
+    typedef lua_State *(*hksi_lua_tothread)(lua_State *, int);
+    hksi_lua_tothread tothread;
+    typedef void (*lua_settop)(lua_State *, int);
+    lua_settop settop;
+    typedef void (*hksi_luaL_checktype)(lua_State *, int, int);
+    hksi_luaL_checktype checktype;
+    typedef void (*hksi_lua_rawget)(lua_State *, int);
+    hksi_lua_rawget rawget;
+    typedef void (*lua_pushnil)(lua_State *);
+    lua_pushnil pushnil;
+    typedef int (*hks_lua_getinfo)(lua_State *, char *, void *);
+    hks_lua_getinfo getinfo;
+    typedef void (*lua_call)(lua_State *, int, int);
+    lua_call call;
+    typedef void (*XMove)(lua_State *, lua_State *, int);
+    XMove xmove;
+    typedef void (*lua_rawset)(lua_State *, int);
+    lua_rawset rawset;
+    typedef void (*lua_remove)(lua_State *, int);
+    lua_remove remove;
+    typedef int (*hksL_loadstring)(lua_State *, StateSettings::HksCompilerSettings *, char *);
+    hksL_loadstring loadstring;
+    typedef int (*LoadStringA)(lua_State *, char *);
+    LoadStringA loadstringa;
+    typedef void (*lua_insert)(lua_State *, int);
+    lua_insert insert;
+
+    typedef int (*db_c_breakpoint)(lua_State *);
+    db_c_breakpoint c_breakpoint;
 
     static void init_imports()
     {
-        pushnamedcclosure = (hks_pushnamedcclosureType)GetProcAddress(hksDll, "?hks_pushnamedcclosure@@YAXPEAUlua_State@@P6AH0@ZHPEBDH@Z");
-        setfield = (hksi_lua_setfieldType)GetProcAddress(hksDll, "?hksi_lua_setfield@@YAXPEAUlua_State@@HPEBD@Z");
-        checkinteger = (luaL_checkintegerType)GetProcAddress(hksDll, "?luaL_checkinteger@@YAHPEAUlua_State@@H@Z");
-        gettop = (GetTopType)GetProcAddress(hksDll, "?GetTop@LuaState@LuaPlus@@QEBAHXZ");
-        dostring = (DoStringType)GetProcAddress(hksDll, "?DoString@LuaState@LuaPlus@@QEAAHPEBD@Z");
-        toboolean = (hksi_lua_tobooleanType)GetProcAddress(hksDll, "?hksi_lua_toboolean@@YAHPEAUlua_State@@H@Z");
-        pushinteger = (hksi_lua_pushintegerType)GetProcAddress(hksDll, "?hksi_lua_pushinteger@@YAXPEAUlua_State@@H@Z");
-        pushnumber = (hksi_lua_pushnumberType)GetProcAddress(hksDll, "?hksi_lua_pushnumber@@YAXPEAUlua_State@@N@Z");
-        error = (hksi_luaL_errorType)GetProcAddress(hksDll, "?hksi_luaL_error@@YAHPEAUlua_State@@PEBDZZ");
-        checknumber = (luaL_checknumberType)GetProcAddress(hksDll, "?luaL_checknumber@@YANPEAUlua_State@@H@Z");
-        pushfstring = (hksi_lua_pushfstringType)GetProcAddress(hksDll, "?hksi_lua_pushfstring@@YAPEBDPEAUlua_State@@PEBDZZ");
-        checklstring = (CheckLStringType)GetProcAddress(hksDll, "?hksi_luaL_checklstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
-        pop = (PopType)GetProcAddress(hksDll, "?Pop@LuaState@LuaPlus@@QEAAXH@Z");
-        touserdata = (hksi_lua_touserdataType)GetProcAddress(hksDll, "?hksi_lua_touserdata@@YAPEAXPEAUlua_State@@H@Z");
-        getfield = (hksi_lua_getfieldType)GetProcAddress(hksDll, "?hksi_lua_getfield@@YAXPEAUlua_State@@HPEBD@Z");
-        createtable = (hksi_lua_createtableType)GetProcAddress(hksDll, "?lua_createtable@@YAXPEAUlua_State@@HH@Z");
-        tocfunction = (lua_tocfunctionType)GetProcAddress(hksDll, "?lua_tocfunction@@YAP6AHPEAUlua_State@@@Z0H@Z");
-        checktable = (hksL_checktableType)GetProcAddress(hksDll, "?hksL_checktable@@YAXPEAUlua_State@@H@Z");
-        objlen = (hks_lua_objlenType)GetProcAddress(hksDll, "?hksi_lua_objlen@@YA_KPEAUlua_State@@H@Z");
-        gettable = (hks_lua_gettableType)GetProcAddress(hksDll, "?hksi_lua_gettable@@YAXPEAUlua_State@@H@Z");
-        cpcall = (hksi_lua_cpcallType)GetProcAddress(hksDll, "?hksi_lua_cpcall@@YAHPEAUlua_State@@P6AH0@ZPEAX@Z");
-        ref = (RefType)GetProcAddress(hksDll, "?luaL_ref@@YAHPEAUlua_State@@H@Z");
-        pcall = (hksi_lua_pcallType)GetProcAddress(hksDll, "?hksi_lua_pcall@@YAHPEAUlua_State@@HHH@Z");
-        pushvalue = (hski_lua_pushvalueType)GetProcAddress(hksDll, "?hksi_lua_pushvalue@@YAXPEAUlua_State@@H@Z");
-        rawgeti = (hksi_lua_rawgetiType)GetProcAddress(hksDll, "?hksi_lua_rawgeti@@YAXPEAUlua_State@@HH@Z");
-        unref = (hksi_lua_unrefType)GetProcAddress(hksDll, "?hksi_luaL_unref@@YAXPEAUlua_State@@HH@Z");
-        settable = (hksi_lua_settableType)GetProcAddress(hksDll, "?SetTable@LuaState@LuaPlus@@QEAAXH@Z");
-        isnumber = (hksi_lua_isnumberType)GetProcAddress(hksDll, "?hksi_lua_isnumber@@YAHPEAUlua_State@@H@Z");
-        tonumber = (hksi_lua_tonumberType)GetProcAddress(hksDll, "?hksi_lua_tonumber@@YANPEAUlua_State@@H@Z");
-        isuserdata = (hksi_lua_isuserdataType)GetProcAddress(hksDll, "?hksi_lua_isuserdata@@YAHPEAUlua_State@@H@Z");
-        luaopen_debug = (luaopen_debugType)GetProcAddress(hksDll, "?luaopen_debug@@YAHPEAUlua_State@@@Z");
-        tointeger = (hksi_lua_tointegerType)GetProcAddress(hksDll, "?hksi_lua_tointeger@@YAHPEAUlua_State@@H@Z");
-        type = (hksi_lua_typeType)GetProcAddress(hksDll, "?hksi_lua_type@@YAHPEAUlua_State@@H@Z");
-        optinteger = (luaL_optintegerType)GetProcAddress(hksDll, "?luaL_optinteger@@YAHPEAUlua_State@@HH@Z");
-        sethook = (hksi_lua_sethookType)GetProcAddress(hksDll, "?hksi_lua_sethook@@YAHPEAUlua_State@@P6AX0PEAUlua_Debug@@@ZHH@Z");
-        gethook = (hksi_lua_gethookType)GetProcAddress(hksDll, "?hksi_lua_gethook@@YAP6AXPEAUlua_State@@PEAUlua_Debug@@@Z0@Z");
-        gethookmask = (hksi_lua_gethookmaskType)GetProcAddress(hksDll, "?hksi_lua_gethookmask@@YAHPEAUlua_State@@@Z");
-        gethookcount = (hksi_lua_gethookcountType)GetProcAddress(hksDll, "?hksi_lua_gethookcount@@YAHPEAUlua_State@@@Z");
-        newstate = (luaL_newstateType)GetProcAddress(hksDll, "?luaL_newstate@@YAPEAUlua_State@@XZ");
-        openlibs = (luaL_openlibsType)GetProcAddress(hksDll, "?luaL_openlibs@@YAXPEAUlua_State@@@Z");
-        close = (luaL_closeType)GetProcAddress(hksDll, "?lua_close@@YAXPEAUlua_State@@@Z");
-        tolstring = (lua_tolstringType)GetProcAddress(hksDll, "?lua_tolstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
-        dofile = (DoFileType)GetProcAddress(hksDll, "?DoFile@LuaState@LuaPlus@@QEAAHPEBD@Z");
-        isstring = (lua_isstringType)GetProcAddress(hksDll, "?lua_isstring@@YAHPEAUlua_State@@H@Z");
-        tothread = (hksi_lua_tothreadType)GetProcAddress(hksDll, "?hksi_lua_tothread@@YAPEAUlua_State@@PEAU1@H@Z");
-        settop = (lua_settopType)GetProcAddress(hksDll, "?lua_settop@@YAXPEAUlua_State@@H@Z");
-        checktype = (hksi_luaL_checktypeType)GetProcAddress(hksDll, "?hksi_luaL_checktype@@YAXPEAUlua_State@@HH@Z");
-        rawget = (hksi_lua_rawgetType)GetProcAddress(hksDll, "?hksi_lua_rawget@@YAXPEAUlua_State@@H@Z");
-        pushnil = (lua_pushnilType)GetProcAddress(hksDll, "?lua_pushnil@@YAXPEAUlua_State@@@Z");
-        getinfo = (hks_lua_getinfoType)GetProcAddress(hksDll, "?hksi_lua_getinfo@@YAHPEAUlua_State@@PEBDPEAUlua_Debug@@@Z");
-        call = (lua_callType)GetProcAddress(hksDll, "?lua_call@@YAXPEAUlua_State@@HH@Z");
-        xmove = (XMoveType)GetProcAddress(hksDll, "?XMove@LuaState@LuaPlus@@QEAAXPEAV12@H@Z");
-        rawset = (lua_rawsetType)GetProcAddress(hksDll, "?lua_rawset@@YAXPEAUlua_State@@H@Z");
-        remove = (lua_removeType)GetProcAddress(hksDll, "?lua_remove@@YAXPEAUlua_State@@H@Z");
+        pushnamedcclosure = (hks_pushnamedcclosure)GetProcAddress(hksDll, "?hks_pushnamedcclosure@@YAXPEAUlua_State@@P6AH0@ZHPEBDH@Z");
+        setfield = (hksi_lua_setfield)GetProcAddress(hksDll, "?hksi_lua_setfield@@YAXPEAUlua_State@@HPEBD@Z");
+        checkinteger = (luaL_checkinteger)GetProcAddress(hksDll, "?luaL_checkinteger@@YAHPEAUlua_State@@H@Z");
+        gettop = (GetTop)GetProcAddress(hksDll, "?GetTop@LuaState@LuaPlus@@QEBAHXZ");
+        dostring = (DoString)GetProcAddress(hksDll, "?DoString@LuaState@LuaPlus@@QEAAHPEBD@Z");
+        toboolean = (hksi_lua_toboolean)GetProcAddress(hksDll, "?hksi_lua_toboolean@@YAHPEAUlua_State@@H@Z");
+        pushinteger = (hksi_lua_pushinteger)GetProcAddress(hksDll, "?hksi_lua_pushinteger@@YAXPEAUlua_State@@H@Z");
+        pushnumber = (hksi_lua_pushnumber)GetProcAddress(hksDll, "?hksi_lua_pushnumber@@YAXPEAUlua_State@@N@Z");
+        error = (hksi_luaL_error)GetProcAddress(hksDll, "?hksi_luaL_error@@YAHPEAUlua_State@@PEBDZZ");
+        checknumber = (luaL_checknumber)GetProcAddress(hksDll, "?luaL_checknumber@@YANPEAUlua_State@@H@Z");
+        pushfstring = (hksi_lua_pushfstring)GetProcAddress(hksDll, "?hksi_lua_pushfstring@@YAPEBDPEAUlua_State@@PEBDZZ");
+        checklstring = (CheckLString)GetProcAddress(hksDll, "?hksi_luaL_checklstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
+        pop = (Pop)GetProcAddress(hksDll, "?Pop@LuaState@LuaPlus@@QEAAXH@Z");
+        touserdata = (hksi_lua_touserdata)GetProcAddress(hksDll, "?hksi_lua_touserdata@@YAPEAXPEAUlua_State@@H@Z");
+        getfield = (hksi_lua_getfield)GetProcAddress(hksDll, "?hksi_lua_getfield@@YAXPEAUlua_State@@HPEBD@Z");
+        createtable = (hksi_lua_createtable)GetProcAddress(hksDll, "?lua_createtable@@YAXPEAUlua_State@@HH@Z");
+        tocfunction = (lua_tocfunction)GetProcAddress(hksDll, "?lua_tocfunction@@YAP6AHPEAUlua_State@@@Z0H@Z");
+        checktable = (hksL_checktable)GetProcAddress(hksDll, "?hksL_checktable@@YAXPEAUlua_State@@H@Z");
+        objlen = (hks_lua_objlen)GetProcAddress(hksDll, "?hksi_lua_objlen@@YA_KPEAUlua_State@@H@Z");
+        gettable = (hks_lua_gettable)GetProcAddress(hksDll, "?hksi_lua_gettable@@YAXPEAUlua_State@@H@Z");
+        cpcall = (hksi_lua_cpcall)GetProcAddress(hksDll, "?hksi_lua_cpcall@@YAHPEAUlua_State@@P6AH0@ZPEAX@Z");
+        ref = (Ref)GetProcAddress(hksDll, "?luaL_ref@@YAHPEAUlua_State@@H@Z");
+        pcall = (hksi_lua_pcall)GetProcAddress(hksDll, "?hksi_lua_pcall@@YAHPEAUlua_State@@HHH@Z");
+        pushvalue = (hski_lua_pushvalue)GetProcAddress(hksDll, "?hksi_lua_pushvalue@@YAXPEAUlua_State@@H@Z");
+        rawgeti = (hksi_lua_rawgeti)GetProcAddress(hksDll, "?hksi_lua_rawgeti@@YAXPEAUlua_State@@HH@Z");
+        unref = (hksi_lua_unref)GetProcAddress(hksDll, "?hksi_luaL_unref@@YAXPEAUlua_State@@HH@Z");
+        settable = (hksi_lua_settable)GetProcAddress(hksDll, "?SetTable@LuaState@LuaPlus@@QEAAXH@Z");
+        isnumber = (hksi_lua_isnumber)GetProcAddress(hksDll, "?hksi_lua_isnumber@@YAHPEAUlua_State@@H@Z");
+        tonumber = (hksi_lua_tonumber)GetProcAddress(hksDll, "?hksi_lua_tonumber@@YANPEAUlua_State@@H@Z");
+        isuserdata = (hksi_lua_isuserdata)GetProcAddress(hksDll, "?hksi_lua_isuserdata@@YAHPEAUlua_State@@H@Z");
+        open_debug = (luaopen_debug)GetProcAddress(hksDll, "?luaopen_debug@@YAHPEAUlua_State@@@Z");
+        tointeger = (hksi_lua_tointeger)GetProcAddress(hksDll, "?hksi_lua_tointeger@@YAHPEAUlua_State@@H@Z");
+        type = (hksi_lua_type)GetProcAddress(hksDll, "?hksi_lua_type@@YAHPEAUlua_State@@H@Z");
+        optinteger = (luaL_optinteger)GetProcAddress(hksDll, "?luaL_optinteger@@YAHPEAUlua_State@@HH@Z");
+        sethook = (hksi_lua_sethook)GetProcAddress(hksDll, "?hksi_lua_sethook@@YAHPEAUlua_State@@P6AX0PEAUlua_Debug@@@ZHH@Z");
+        gethook = (hksi_lua_gethook)GetProcAddress(hksDll, "?hksi_lua_gethook@@YAP6AXPEAUlua_State@@PEAUlua_Debug@@@Z0@Z");
+        gethookmask = (hksi_lua_gethookmask)GetProcAddress(hksDll, "?hksi_lua_gethookmask@@YAHPEAUlua_State@@@Z");
+        gethookcount = (hksi_lua_gethookcount)GetProcAddress(hksDll, "?hksi_lua_gethookcount@@YAHPEAUlua_State@@@Z");
+        newstate = (luaL_newstate)GetProcAddress(hksDll, "?luaL_newstate@@YAPEAUlua_State@@XZ");
+        openlibs = (luaL_openlibs)GetProcAddress(hksDll, "?luaL_openlibs@@YAXPEAUlua_State@@@Z");
+        close = (luaL_close)GetProcAddress(hksDll, "?lua_close@@YAXPEAUlua_State@@@Z");
+        tolstring = (lua_tolstring)GetProcAddress(hksDll, "?lua_tolstring@@YAPEBDPEAUlua_State@@HPEA_K@Z");
+        dofile = (DoFile)GetProcAddress(hksDll, "?DoFile@LuaState@LuaPlus@@QEAAHPEBD@Z");
+        isstring = (lua_isstring)GetProcAddress(hksDll, "?lua_isstring@@YAHPEAUlua_State@@H@Z");
+        tothread = (hksi_lua_tothread)GetProcAddress(hksDll, "?hksi_lua_tothread@@YAPEAUlua_State@@PEAU1@H@Z");
+        settop = (lua_settop)GetProcAddress(hksDll, "?lua_settop@@YAXPEAUlua_State@@H@Z");
+        checktype = (hksi_luaL_checktype)GetProcAddress(hksDll, "?hksi_luaL_checktype@@YAXPEAUlua_State@@HH@Z");
+        rawget = (hksi_lua_rawget)GetProcAddress(hksDll, "?hksi_lua_rawget@@YAXPEAUlua_State@@H@Z");
+        pushnil = (lua_pushnil)GetProcAddress(hksDll, "?lua_pushnil@@YAXPEAUlua_State@@@Z");
+        getinfo = (hks_lua_getinfo)GetProcAddress(hksDll, "?hksi_lua_getinfo@@YAHPEAUlua_State@@PEBDPEAUlua_Debug@@@Z");
+        call = (lua_call)GetProcAddress(hksDll, "?lua_call@@YAXPEAUlua_State@@HH@Z");
+        xmove = (XMove)GetProcAddress(hksDll, "?XMove@LuaState@LuaPlus@@QEAAXPEAV12@H@Z");
+        rawset = (lua_rawset)GetProcAddress(hksDll, "?lua_rawset@@YAXPEAUlua_State@@H@Z");
+        remove = (lua_remove)GetProcAddress(hksDll, "?lua_remove@@YAXPEAUlua_State@@H@Z");
+        loadstring = (hksL_loadstring)GetProcAddress(hksDll, "?hksL_loadstring@@YAHPEAUlua_State@@AEBUHksCompilerSettings@@PEBD@Z");
+        loadstringa = (LoadStringA)GetProcAddress(hksDll, "?luaL_loadstring@@YAHPEAUlua_State@@PEBD@Z");
+        insert = (lua_insert)GetProcAddress(hksDll, "?lua_insert@@YAXPEAUlua_State@@H@Z");
+
+        c_breakpoint = (db_c_breakpoint)((uintptr_t)hksDll + 0x9760);
+
+        StateSettings::getDefaultCompilerSettings = (StateSettings::_getDefaultCompilerSettings)
+            GetProcAddress(hksDll, "?getDefaultCompilerSettings@HksStateSettings@@SAAEAUHksCompilerSettings@@XZ");
     }
 
     int isnil(lua_State *L, int index)
@@ -381,7 +409,7 @@ namespace hks
                 pushinteger(L, *(int *)((uintptr_t)ar + 0x40));
             else
                 pushnil(L);
-            getinfo(L, "lS", ar);
+            getinfo(L, (char *)"lS", ar);
             call(L, 2, 0);
         }
     }
@@ -400,11 +428,11 @@ namespace hks
         }
     }
 
-    int l_sethook(lua_State *L)
+    int db_sethook(lua_State *L)
     {
         int arg;
         lua_State *L1 = getthread(L, &arg);
-        if (isnoneornil(L, arg + 1))
+        if (int test = isnoneornil(L, arg + 1))
         {
             settop(L, arg + 1);
             sethook(L1, NULL, 0, 0);
@@ -426,7 +454,7 @@ namespace hks
     }
 
     static int hook_id = 0;
-    int l_gethook(lua_State *L)
+    int db_gethook(lua_State *L)
     {
         int arg;
         lua_State *L1 = getthread(L, &arg);
@@ -476,21 +504,20 @@ int main(int argc, char *argv[])
     hks::openlibs(L);
 
     const char *lua_path = getenv("LUA_PATH");
-    if (lua_path == NULL)
+    std::stringstream lua_path_stream(".\\?.lua;!\\?.lua;!\\init.lua;");
+    if (lua_path != NULL)
     {
-        lua_path = ".\\?.lua;!\\?.lua;!\\init.lua;";
-        hks::pushfstring(L, lua_path);
-        hks::setfield(L, hks::LUA_GLOBAL, "LUA_PATH");
+        lua_path_stream << lua_path;
     }
 
     hks::getfield(L, hks::LUA_GLOBAL, "package");
-    hks::pushfstring(L, lua_path);
+    hks::pushfstring(L, lua_path_stream.str().c_str());
     hks::setfield(L, -2, "path");
     hks::pop(L, 1);
 
     hks::getfield(L, hks::LUA_GLOBAL, "debug");
-    PushLuaMethod(L, hks::l_gethook, "l_gethook", -2, "gethook");
-    PushLuaMethod(L, hks::l_sethook, "l_sethook", -2, "sethook");
+    PushLuaMethod(L, hks::db_gethook, "db_gethook", -2, "gethook");
+    PushLuaMethod(L, hks::db_sethook, "db_sethook", -2, "sethook");
     hks::pop(L, 1);
 
     if (argc == 2)
